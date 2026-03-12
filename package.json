@@ -1,0 +1,27 @@
+{
+  "name": "cubicle-cat-club",
+  "version": "0.1.0",
+  "description": "Your AI agents as cats.",
+  "private": true,
+  "workspaces": [
+    "packages/shared",
+    "packages/server",
+    "packages/client"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace=packages/server",
+    "build": "npm run build --workspaces",
+    "start": "npm run start --workspace=packages/server",
+    "live": "npm run build --workspaces && npm run start --workspace=packages/server",
+    "mock": "npm run mock --workspace=packages/server",
+    "typecheck": "tsc --build"
+  },
+  "bin": {
+    "cubicle-cat-club": "./packages/server/dist/cli.js"
+  },
+  "keywords": ["claude", "claude-code", "pixel-art", "agents", "visualization", "office"],
+  "license": "MIT",
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
