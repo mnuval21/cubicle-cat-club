@@ -5,14 +5,18 @@ import { Direction } from '@cubicle-cat-club/shared';
  */
 export interface Furniture {
   id: string;
-  type: 'desk' | 'chair' | 'computer' | 'plant' | 'cat-tree' | 'cat-bed' | 'food-bowl';
+  type: 'desk' | 'chair' | 'computer' | 'plant' | 'cat-tree' | 'cat-bed' | 'food-bowl' | 'sofa' | 'bookshelf' | 'rug' | 'wall-art';
   col: number;
   row: number;
+  /** Flip sprite vertically (for sofas facing toward the viewer instead of away) */
+  flipY?: boolean;
+  /** For wall-art: which poster index (0=ship_it, 1=cat_portrait, 2=git_force) */
+  artIndex?: number;
 }
 
 /**
  * Seat represents a position where an agent can sit and work.
- * Associated with a desk in the desk zone (cols 1-12).
+ * 'desk' seats are in the work zone; 'lounge' seats are in the cat lounge.
  */
 export interface Seat {
   furnitureId: string;
@@ -20,6 +24,7 @@ export interface Seat {
   row: number;
   facingDir: Direction;
   assignedAgentId: string | null;
+  seatType?: 'desk' | 'lounge';
 }
 
 /**
@@ -56,6 +61,7 @@ export function createDefaultFurniture(): { furniture: Furniture[]; seats: Seat[
         row: deskRow + 1,
         facingDir: Direction.UP,
         assignedAgentId: null,
+        seatType: 'desk',
       });
 
       deskIdx++;
@@ -71,26 +77,42 @@ export function createDefaultFurniture(): { furniture: Furniture[]; seats: Seat[
     furniture.push({ id: `plant-dz-${pos.col}-${pos.row}`, type: 'plant', col: pos.col, row: pos.row });
   }
 
+  // Wall art — small framed pictures hung on the wall (row 0).
+  // Placed between windows (windows at cols 3, 7, 13, 18) to avoid overlap.
+  furniture.push({ id: 'wall-art-0', type: 'wall-art', col: 5,  row: 1, artIndex: 0 }); // ship it!
+  furniture.push({ id: 'wall-art-1', type: 'wall-art', col: 9,  row: 1, artIndex: 1 }); // cat portrait
+  furniture.push({ id: 'wall-art-2', type: 'wall-art', col: 15, row: 1, artIndex: 2 }); // git force
+
+  // Bookshelf against left wall between desk rows
+  furniture.push({ id: 'bookshelf-desk', type: 'bookshelf', col: 1, row: 4 });
+
   // ── DIVIDER ───────────────────────────────────────────────────────────────
   // Single plant at mid-divider
   furniture.push({ id: 'plant-div-5', type: 'plant', col: 10, row: 5 });
 
   // ── CAT LOUNGE ────────────────────────────────────────────────────────────
 
-  // Cat tree — prominent centerpiece at col 16, rows 2–4
-  furniture.push({ id: 'cat-tree-base', type: 'cat-tree', col: 16, row: 4 });
-  furniture.push({ id: 'cat-tree-mid',  type: 'cat-tree', col: 16, row: 3 });
-  furniture.push({ id: 'cat-tree-top',  type: 'cat-tree', col: 16, row: 2 });
+  // Cat tree — single item rendered as 2×4 tiles from base position
+  furniture.push({ id: 'cat-tree', type: 'cat-tree', col: 16, row: 4 });
+
+  // Bookshelf against top wall
+  furniture.push({ id: 'bookshelf-lounge', type: 'bookshelf', col: 11, row: 1 });
+
+  // Sofa — 4 tiles wide, facing viewer
+  furniture.push({ id: 'sofa-lounge', type: 'sofa', col: 11, row: 3 });
+
+  // Rug in center of lounge
+  furniture.push({ id: 'rug-lounge', type: 'rug', col: 13, row: 5 });
 
   // Cat beds
-  furniture.push({ id: 'cat-bed-0', type: 'cat-bed', col: 12, row: 3 });
-  furniture.push({ id: 'cat-bed-1', type: 'cat-bed', col: 19, row: 7 });
+  furniture.push({ id: 'cat-bed-0', type: 'cat-bed', col: 18, row: 4 });
+  furniture.push({ id: 'cat-bed-1', type: 'cat-bed', col: 12, row: 7 });
 
-  // Food bowls (water + food side by side)
-  furniture.push({ id: 'food-bowl-0', type: 'food-bowl', col: 14, row: 8 });
-  furniture.push({ id: 'food-bowl-1', type: 'food-bowl', col: 15, row: 8 });
+  // Food & water bowls
+  furniture.push({ id: 'food-bowl-0', type: 'food-bowl', col: 18, row: 7 });
+  furniture.push({ id: 'food-bowl-1', type: 'food-bowl', col: 19, row: 7 });
 
-  // Plants in the cat lounge — just a couple of corners
+  // Plants — corners
   const loungePlants = [
     { col: 20, row: 2 },
     { col: 20, row: 9 },
@@ -99,6 +121,17 @@ export function createDefaultFurniture(): { furniture: Furniture[]; seats: Seat[
   for (const pos of loungePlants) {
     furniture.push({ id: `plant-cl-${pos.col}-${pos.row}`, type: 'plant', col: pos.col, row: pos.row });
   }
+
+  // Gerald's lounge perch — at the cat tree top (col 16, row 2)
+  // Filled last, so Gerald appears only when there are 7+ concurrent agents.
+  seats.push({
+    furnitureId: 'cat-tree',
+    col: 16,
+    row: 2,
+    facingDir: Direction.DOWN,
+    assignedAgentId: null,
+    seatType: 'lounge',
+  });
 
   return { furniture, seats };
 }

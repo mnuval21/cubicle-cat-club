@@ -1,7 +1,8 @@
 import { TileType, Direction, CharacterState } from '@cubicle-cat-club/shared';
 import { OfficeState } from './office-state';
 import { Camera } from './camera';
-import { drawCat, CAT_PALETTES } from '../characters/cat-sprites';
+import { drawCat } from '../characters/cat-sprites';
+import type { LoadedAssets } from './asset-loader';
 
 /**
  * Tool badge map: emoji + tint color for each tool category.
@@ -26,6 +27,17 @@ function getToolBadge(tool: string): { emoji: string; tint: [number, number, num
   return { emoji: '🔧', tint: [64, 64, 64] };
 }
 
+// ─── Sprite sources ──────────────────────────────────────────────────────────
+//
+// floors.png     288×144  (18 cols × 9 rows,  16×16 per tile)
+// Furniture is drawn procedurally — no sprite sheet needed.
+
+/** Floor sprite coords in floors.png for each zone. */
+const FLOOR_SPRITE = {
+  deskZone: { sx: 160, sy: 32, sw: 16, sh: 16 }, // light cream vertical-plank
+  lounge:   { sx: 160, sy: 32, sw: 16, sh: 16 }, // same light cream plank throughout
+};
+
 /**
  * Renderer handles all canvas drawing.
  * Draws the tile map, furniture, characters (CATS!), and speech bubbles.
@@ -39,6 +51,8 @@ export class Renderer {
 
   // Animation frame counter for sprite animations
   private animFrame: number = 0;
+  // Loaded sprite sheet images (null until assets are preloaded)
+  private assets: LoadedAssets | null = null;
 
   constructor(canvas: HTMLCanvasElement, officeState: OfficeState) {
     this.canvas = canvas;
@@ -49,6 +63,11 @@ export class Renderer {
     this.ctx = ctx;
     this.officeState = officeState;
     this.camera = new Camera();
+  }
+
+  /** Called once assets finish loading — enables sprite-sheet rendering. */
+  setAssets(assets: LoadedAssets): void {
+    this.assets = assets;
   }
 
   /**
@@ -111,22 +130,31 @@ export class Renderer {
         const inLounge = col >= 11;
 
         if (tileType === TileType.WALL) {
-          this.ctx.fillStyle = '#3a3a5a';
+          this.ctx.fillStyle = '#4a3a28';
+          this.ctx.fillRect(x, y, this.tileSize, this.tileSize);
         } else if (tileType === TileType.WINDOW) {
           this.drawWindowTile(x, y);
           continue;
         } else if (tileType === TileType.FLOOR) {
-          this.ctx.fillStyle = inLounge ? '#3d3020' : '#2a2a4a';
+          if (this.assets) {
+            const { sx, sy, sw, sh } = inLounge ? FLOOR_SPRITE.lounge : FLOOR_SPRITE.deskZone;
+            this.ctx.imageSmoothingEnabled = false;
+            this.ctx.drawImage(this.assets.office.floors, sx, sy, sw, sh, x, y, this.tileSize, this.tileSize);
+          } else {
+            this.ctx.fillStyle = inLounge ? '#3d3020' : '#2a2a4a';
+            this.ctx.fillRect(x, y, this.tileSize, this.tileSize);
+          }
         } else {
           this.ctx.fillStyle = '#1a1a2e'; // VOID
+          this.ctx.fillRect(x, y, this.tileSize, this.tileSize);
         }
 
-        this.ctx.fillRect(x, y, this.tileSize, this.tileSize);
-
-        // Subtle grid lines
-        this.ctx.strokeStyle = inLounge ? '#332818' : '#1a1a3a';
-        this.ctx.lineWidth = 0.5;
-        this.ctx.strokeRect(x, y, this.tileSize, this.tileSize);
+        // Subtle grid lines (skip for sprite floor — texture provides visual rhythm)
+        if (tileType !== TileType.FLOOR || !this.assets) {
+          this.ctx.strokeStyle = inLounge ? '#332818' : '#1a1a3a';
+          this.ctx.lineWidth = 0.5;
+          this.ctx.strokeRect(x, y, this.tileSize, this.tileSize);
+        }
       }
     }
   }
@@ -157,7 +185,7 @@ export class Renderer {
   }
 
   /**
-   * Draw a piece of furniture.
+   * Draw a piece of furniture — all procedural pixel art (no sprite sheets).
    */
   private drawFurniture(furniture: any): void {
     const x = furniture.col * this.tileSize;
@@ -166,45 +194,43 @@ export class Renderer {
 
     switch (furniture.type) {
       case 'desk':
-        // Wooden desk top
+        // Wooden desk surface
         this.ctx.fillStyle = '#6b5540';
         this.ctx.fillRect(x, y, ts, ts);
-        // Desk surface highlight
         this.ctx.fillStyle = '#7d6350';
         this.ctx.fillRect(x + 1, y + 1, ts - 2, 3);
         break;
 
       case 'chair':
-        // Chair seat
+        // Office chair — seat cushion and backrest
         this.ctx.fillStyle = '#3a5080';
         this.ctx.fillRect(x + 2, y + 4, ts - 4, ts - 6);
-        // Chair back
         this.ctx.fillStyle = '#2a3860';
         this.ctx.fillRect(x + 3, y, ts - 6, 5);
         break;
 
       case 'computer':
-        // Monitor (drawn on top of desk tile — same position)
+        // Monitor on desk tile
         this.ctx.fillStyle = '#1a1a2a';
         this.ctx.fillRect(x + 3, y + 1, ts - 6, ts - 7);
-        // Screen glow (blue tint for coding vibes)
+        // Screen glow
         this.ctx.fillStyle = '#3060c0';
         this.ctx.fillRect(x + 4, y + 2, ts - 8, ts - 10);
-        // Screen text lines
+        // Code lines
         this.ctx.fillStyle = '#80c0ff';
         for (let i = 0; i < 3; i++) {
           this.ctx.fillRect(x + 5, y + 3 + i * 2, ts - 12 - (i % 2) * 2, 1);
         }
-        // Monitor stand
+        // Stand
         this.ctx.fillStyle = '#2a2a3a';
         this.ctx.fillRect(x + ts / 2 - 1, y + ts - 6, 2, 3);
         break;
 
-      case 'plant': {
+      case 'plant':
         // Terracotta pot
         this.ctx.fillStyle = '#c06030';
         this.ctx.fillRect(x + 4, y + 10, ts - 8, ts - 11);
-        // Leaves
+        // Foliage
         this.ctx.fillStyle = '#2d6e30';
         this.ctx.beginPath();
         this.ctx.ellipse(x + ts / 2, y + 6, 5, 5, 0, 0, Math.PI * 2);
@@ -217,79 +243,180 @@ export class Renderer {
         this.ctx.ellipse(x + ts / 2 + 3, y + 8, 3, 4, 0.4, 0, Math.PI * 2);
         this.ctx.fill();
         break;
-      }
 
       case 'cat-tree': {
-        // Vertical pole
+        // Cat tree — extends 1 tile left and 3 tiles up from anchor
+        const tx = x - ts;
+        const ty = y - ts * 3;
+        const tw = ts * 2;
+        const th = ts * 4;
+        const cx = tx + tw / 2;
+        // Main post (sisal-wrapped)
+        this.ctx.fillStyle = '#B08830';
+        this.ctx.fillRect(cx - 2, ty + 6, 5, th - 6);
+        // Base platform
         this.ctx.fillStyle = '#8B6914';
-        this.ctx.fillRect(x + 6, y, 4, ts);
-        // Platform (only on base and mid tiles — check id suffix)
-        const isTop = furniture.id.endsWith('-top');
-        const isMid = furniture.id.endsWith('-mid');
-        if (isTop) {
-          // Top platform — wider, maybe a little perch
-          this.ctx.fillStyle = '#a07820';
-          this.ctx.fillRect(x, y + 4, ts, 4);
-          // Dangling toy
-          this.ctx.strokeStyle = '#c04040';
-          this.ctx.lineWidth = 0.5;
-          this.ctx.beginPath();
-          this.ctx.moveTo(x + ts / 2, y + 8);
-          this.ctx.lineTo(x + ts / 2, y + 14);
-          this.ctx.stroke();
-          this.ctx.fillStyle = '#e05050';
-          this.ctx.beginPath();
-          this.ctx.arc(x + ts / 2, y + 14, 1.5, 0, Math.PI * 2);
-          this.ctx.fill();
-        } else if (isMid) {
-          // Mid platform — side shelf
-          this.ctx.fillStyle = '#a07820';
-          this.ctx.fillRect(x - 2, y + 8, ts - 2, 3);
-        } else {
-          // Base — wide and stable
-          this.ctx.fillStyle = '#705010';
-          this.ctx.fillRect(x - 1, y + 12, ts + 2, 4);
-        }
+        this.ctx.fillRect(tx + 2, ty + th - 4, tw - 4, 4);
+        // Middle-low platform (extends right)
+        this.ctx.fillRect(cx - 1, Math.floor(ty + th * 0.65), tw / 2 + 2, 3);
+        // Middle-high platform (extends left)
+        this.ctx.fillRect(tx + 3, Math.floor(ty + th * 0.38), tw / 2 + 2, 3);
+        // Top platform
+        this.ctx.fillRect(tx + 3, ty + 6, tw - 6, 3);
+        // Top cushion
+        this.ctx.fillStyle = '#D0A850';
+        this.ctx.fillRect(tx + 4, ty + 3, tw - 8, 4);
         break;
       }
 
       case 'cat-bed': {
-        // Round cushion
-        this.ctx.fillStyle = '#c05080';
+        // Cushioned cat bed — 2×2 tiles centered on position
+        const bx = x - ts / 2;
+        const by = y - ts / 2;
+        const bw = ts * 2;
+        const bh = ts * 2;
+        // Outer rim
+        this.ctx.fillStyle = '#5080A0';
         this.ctx.beginPath();
-        this.ctx.ellipse(x + ts / 2, y + ts / 2 + 2, ts / 2 - 1, ts / 2 - 3, 0, 0, Math.PI * 2);
+        this.ctx.ellipse(bx + bw / 2, by + bh / 2 + 2, bw / 2 - 2, bh / 2 - 3, 0, 0, Math.PI * 2);
         this.ctx.fill();
         // Inner cushion
-        this.ctx.fillStyle = '#e080a0';
+        this.ctx.fillStyle = '#B0D0E0';
         this.ctx.beginPath();
-        this.ctx.ellipse(x + ts / 2, y + ts / 2 + 2, ts / 2 - 3, ts / 2 - 5, 0, 0, Math.PI * 2);
+        this.ctx.ellipse(bx + bw / 2, by + bh / 2 + 2, bw / 2 - 5, bh / 2 - 6, 0, 0, Math.PI * 2);
         this.ctx.fill();
-        // Rim
-        this.ctx.strokeStyle = '#902050';
-        this.ctx.lineWidth = 1;
-        this.ctx.beginPath();
-        this.ctx.ellipse(x + ts / 2, y + ts / 2 + 2, ts / 2 - 1, ts / 2 - 3, 0, 0, Math.PI * 2);
-        this.ctx.stroke();
         break;
       }
 
       case 'food-bowl': {
-        // Small bowl
+        // Water + food bowls side by side — only render from bowl-0
+        if (furniture.id.endsWith('-1')) break;
+        const bowlY = y + ts - 5;
+        // Water bowl (left)
         this.ctx.fillStyle = '#607090';
         this.ctx.beginPath();
-        this.ctx.ellipse(x + ts / 2, y + ts - 4, 5, 3, 0, 0, Math.PI * 2);
+        this.ctx.ellipse(x + ts / 2, bowlY, 5, 3, 0, 0, Math.PI * 2);
         this.ctx.fill();
-        // Food/water inside
-        const isWater = furniture.id.endsWith('-0');
-        this.ctx.fillStyle = isWater ? '#4090d0' : '#c07030';
+        this.ctx.fillStyle = '#4090d0';
         this.ctx.beginPath();
-        this.ctx.ellipse(x + ts / 2, y + ts - 5, 3, 2, 0, 0, Math.PI * 2);
+        this.ctx.ellipse(x + ts / 2, bowlY - 1, 3, 2, 0, 0, Math.PI * 2);
         this.ctx.fill();
+        // Food bowl (right)
+        this.ctx.fillStyle = '#607090';
+        this.ctx.beginPath();
+        this.ctx.ellipse(x + ts + ts / 2, bowlY, 5, 3, 0, 0, Math.PI * 2);
+        this.ctx.fill();
+        this.ctx.fillStyle = '#a07040';
+        this.ctx.beginPath();
+        this.ctx.ellipse(x + ts + ts / 2, bowlY - 1, 3, 2, 0, 0, Math.PI * 2);
+        this.ctx.fill();
+        break;
+      }
+
+      case 'sofa': {
+        // Sofa — 4 tiles wide, 2 tiles tall
+        const sw = ts * 4;
+        const sh = ts * 2;
+        // Back
+        this.ctx.fillStyle = '#6B4820';
+        this.ctx.fillRect(x, y, sw, 5);
+        // Main body
+        this.ctx.fillStyle = '#8B6838';
+        this.ctx.fillRect(x + 2, y + 3, sw - 4, sh - 4);
+        // Armrests
+        this.ctx.fillStyle = '#7A5828';
+        this.ctx.fillRect(x, y + 3, 4, sh - 3);
+        this.ctx.fillRect(x + sw - 4, y + 3, 4, sh - 3);
+        // Seat cushions (3 sections)
+        this.ctx.fillStyle = '#A08048';
+        const cushW = Math.floor((sw - 14) / 3);
+        for (let i = 0; i < 3; i++) {
+          this.ctx.fillRect(x + 5 + i * (cushW + 1), y + 5, cushW, sh - 8);
+        }
+        break;
+      }
+
+      case 'bookshelf': {
+        // Bookshelf — 2×2 tiles
+        const bw = ts * 2;
+        const bh = ts * 2;
+        // Frame
+        this.ctx.fillStyle = '#5a3a20';
+        this.ctx.fillRect(x, y, bw, bh);
+        // Back panel
+        this.ctx.fillStyle = '#6b4a30';
+        this.ctx.fillRect(x + 2, y + 2, bw - 4, bh - 4);
+        // Shelves
+        this.ctx.fillStyle = '#5a3a20';
+        const shelfH = Math.floor(bh / 4);
+        for (let i = 1; i <= 3; i++) {
+          this.ctx.fillRect(x + 1, y + i * shelfH, bw - 2, 2);
+        }
+        // Books (fixed pattern — no randomness)
+        const bookColors = ['#c04040', '#4060c0', '#40a040', '#c0a020', '#8040a0'];
+        const widths = [3, 2, 3, 2, 2, 3, 2];
+        for (let shelf = 0; shelf < 3; shelf++) {
+          const sy = y + shelf * shelfH + 3;
+          const sHeight = shelfH - 4;
+          let bx = x + 3;
+          for (let b = 0; b < widths.length && bx < x + bw - 4; b++) {
+            this.ctx.fillStyle = bookColors[(shelf * 3 + b) % bookColors.length];
+            this.ctx.fillRect(bx, sy, widths[b], sHeight);
+            bx += widths[b] + 1;
+          }
+        }
+        break;
+      }
+
+      case 'rug': {
+        // Rug — 3×2 tiles
+        const rw = ts * 3;
+        const rh = ts * 2;
+        // Base
+        this.ctx.fillStyle = '#8B6838';
+        this.ctx.fillRect(x, y, rw, rh);
+        // Border
+        this.ctx.strokeStyle = '#6B4820';
+        this.ctx.lineWidth = 1;
+        this.ctx.strokeRect(x + 1, y + 1, rw - 2, rh - 2);
+        this.ctx.strokeRect(x + 3, y + 3, rw - 6, rh - 6);
+        // Diamond pattern
+        this.ctx.fillStyle = '#A08048';
+        this.ctx.beginPath();
+        this.ctx.moveTo(x + rw / 2, y + 5);
+        this.ctx.lineTo(x + rw / 2 + 8, y + rh / 2);
+        this.ctx.lineTo(x + rw / 2, y + rh - 5);
+        this.ctx.lineTo(x + rw / 2 - 8, y + rh / 2);
+        this.ctx.closePath();
+        this.ctx.fill();
+        break;
+      }
+
+      case 'wall-art': {
+        // Small framed picture — fits within the wall tile (1×1)
+        const artIdx = furniture.artIndex ?? 0;
+        const artImg = this.assets?.wallArt[artIdx];
+        const artX = x + 2;
+        const artY = y - ts + 2;
+        const artW = ts - 4;
+        const artH = ts - 4;
+        // Frame
+        this.ctx.fillStyle = '#443322';
+        this.ctx.fillRect(artX - 1, artY - 1, artW + 2, artH + 2);
+        if (artImg) {
+          this.ctx.imageSmoothingEnabled = false;
+          this.ctx.drawImage(artImg, 0, 0, 32, 32, artX, artY, artW, artH);
+        } else {
+          // Colored placeholder
+          const colors = ['#406040', '#c08040', '#a04040'];
+          this.ctx.fillStyle = colors[artIdx % colors.length];
+          this.ctx.fillRect(artX, artY, artW, artH);
+        }
         break;
       }
     }
 
-    // Border for desks and chairs
+    // Subtle border for desk/chair grid
     if (furniture.type === 'desk' || furniture.type === 'chair') {
       this.ctx.strokeStyle = '#1a1a2a';
       this.ctx.lineWidth = 0.5;
@@ -310,32 +437,33 @@ export class Renderer {
     direction: Direction;
     state: CharacterState;
     currentTool: string | null;
+    animVariant: number;
   }): void {
-    const palette = CAT_PALETTES[character.paletteIndex % CAT_PALETTES.length];
-
     // Use interpolated pixel position for smooth movement
     const drawX = character.x;
     const drawY = character.y;
 
-    // Render cats at 1.5× tile size, centered horizontally and bottom-aligned
-    const catSize = this.tileSize * 1.5;
-    const catOffsetX = -(catSize - this.tileSize) / 2; // center on tile
-    const catOffsetY = -(catSize - this.tileSize);     // align bottom to tile bottom
+    // Kittens pack sprites are 32×32 — drawn at tileSize*2 × tileSize*2.
+    // Center horizontally on the tile; feet land on the tile, head extends upward.
+    const catOffsetX = -this.tileSize / 2;
+    const catOffsetY = -this.tileSize;
 
     drawCat(
       this.ctx,
       drawX + catOffsetX,
       drawY + catOffsetY,
-      catSize,
-      palette,
+      this.tileSize,
+      character.paletteIndex,
       character.direction,
       character.state,
-      this.animFrame
+      this.animFrame,
+      this.assets,
+      character.animVariant
     );
 
-    // Draw speech bubble if tool is active
+    // Draw speech bubble above the cat's head (cat top = drawY + catOffsetY)
     if (character.currentTool) {
-      this.drawSpeechBubble(drawX + catOffsetX, drawY + catOffsetY - 8, character.currentTool);
+      this.drawSpeechBubble(drawX + catOffsetX, drawY + catOffsetY - 10, character.currentTool);
     }
   }
 

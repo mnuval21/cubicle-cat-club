@@ -17,10 +17,14 @@ export const Toolbar: React.FC<ToolbarProps> = ({ activeRoom }) => {
   const agents = Array.from(activeRoom.characters.values());
 
   const getStatusEmoji = (character: any) => {
+    if (character.paletteIndex === 1) return '🎩';
+    if (character.state === 'KNOCK') return '🤬';
+    if (character.state === 'ZOOMIES') return '😼😼';
     if (character.currentTool || character.state === 'WALK' || character.state === 'TYPE') {
       return '💻';
     }
-    return '💤';
+    if (character.state === 'NAP') return '💤';
+    return '🐱';
   };
 
   return (

@@ -6,6 +6,11 @@ const STRETCH_DURATION = 1.0;   // seconds
 const ZOOMIES_DURATION = 2.2;   // seconds
 const KNOCK_DURATION   = 0.8;   // seconds
 
+/** Re-roll the animation variant so the cat picks a new random pose. */
+function rerollVariant(character: Character): void {
+  character.animVariant = Math.random();
+}
+
 /**
  * State machine for character behavior.
  * Handles transitions between all CharacterStates.
@@ -72,8 +77,10 @@ function handleWalkState(character: Character): void {
       character.tileCol === character.seatCol &&
       character.tileRow === character.seatRow;
     if (character.currentTool && atSeat) {
+      rerollVariant(character);
       character.state = CharacterState.TYPE;
     } else {
+      rerollVariant(character);
       character.state = CharacterState.IDLE;
       character.wanderTimer = Math.random() * 10 + 5;
     }
@@ -83,6 +90,7 @@ function handleWalkState(character: Character): void {
 function handleTypeState(character: Character): void {
   if (!character.currentTool) {
     // Trigger stretch when typing ends
+    rerollVariant(character);
     character.state = CharacterState.STRETCH;
     character.stretchTimer = STRETCH_DURATION;
   }
@@ -91,6 +99,7 @@ function handleTypeState(character: Character): void {
 function handleStretchState(character: Character, dt: number): void {
   character.stretchTimer -= dt;
   if (character.stretchTimer <= 0) {
+    rerollVariant(character);
     character.state = CharacterState.IDLE;
     character.wanderTimer = Math.random() * 5 + 2;
   }
@@ -113,6 +122,7 @@ function handleZoomiesState(character: Character, dt: number, tileMap: TileMap):
   }
 
   if (character.zoomiesTimer <= 0 && character.path.length === 0) {
+    rerollVariant(character);
     character.state = character.preZoomiesState;
     character.moveSpeed = 48; // restore normal speed
     if (character.state === CharacterState.IDLE) {
@@ -124,6 +134,7 @@ function handleZoomiesState(character: Character, dt: number, tileMap: TileMap):
 function handleKnockState(character: Character, dt: number): void {
   character.knockTimer -= dt;
   if (character.knockTimer <= 0) {
+    rerollVariant(character);
     character.state = CharacterState.IDLE;
     character.wanderTimer = Math.random() * 5 + 3;
   }
@@ -145,6 +156,7 @@ export function triggerZoomies(character: Character): void {
  * Trigger KNOCK animation (called on tool error).
  */
 export function triggerKnock(character: Character): void {
+  rerollVariant(character);
   character.knockTimer = KNOCK_DURATION;
   character.state = CharacterState.KNOCK;
 }
@@ -153,6 +165,7 @@ export function triggerKnock(character: Character): void {
  * Put cat to sleep (called on agent:idle event).
  */
 export function triggerNap(character: Character): void {
+  rerollVariant(character);
   character.path = [];
   character.state = CharacterState.NAP;
 }
@@ -162,6 +175,7 @@ export function triggerNap(character: Character): void {
  */
 export function wakeUp(character: Character): void {
   if (character.state === CharacterState.NAP) {
+    rerollVariant(character);
     character.state = CharacterState.STRETCH;
     character.stretchTimer = STRETCH_DURATION;
   }

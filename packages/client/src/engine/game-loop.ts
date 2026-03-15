@@ -1,5 +1,6 @@
 import { OfficeState } from './office-state';
 import { Renderer } from './renderer';
+import type { LoadedAssets } from './asset-loader';
 
 /**
  * GameLoop manages the render loop and frame timing.
@@ -55,6 +56,11 @@ export class GameLoop {
    */
   getRenderer(): Renderer {
     return this.renderer;
+  }
+
+  /** Pass loaded assets to the renderer so sprite-sheet drawing is enabled. */
+  setAssets(assets: LoadedAssets): void {
+    this.renderer.setAssets(assets);
   }
 
   /**

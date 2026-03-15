@@ -50,7 +50,7 @@ async function main(): Promise<void> {
     .name('cubicle-cat-club')
     .description('Your AI agents as cats.')
     .version(packageJson.version)
-    .option('--port <number>', 'Port to listen on (0 = random)', '0')
+    .option('--port <number>', 'Port to listen on (0 = random)', '5175')
     .option('--mock', 'Use mock adapter (simulated agents)', false)
     .option('--live', 'Use real Claude Code adapter (watches ~/.claude/projects/)', false)
     .option('--claude-path <path>', 'Custom path to Claude Code projects directory', undefined)

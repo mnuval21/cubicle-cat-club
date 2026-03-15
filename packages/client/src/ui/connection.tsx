@@ -2,13 +2,19 @@ import React from 'react';
 
 interface ConnectionProps {
   isConnected: boolean;
+  reconnectAttempt?: number;
 }
 
 /**
  * Connection status indicator overlay.
- * Shows WebSocket connection state with auto-reconnect logic.
+ * Shows WebSocket connection state with reconnect attempt count.
  */
-export const ConnectionStatus: React.FC<ConnectionProps> = ({ isConnected }) => {
+export const ConnectionStatus: React.FC<ConnectionProps> = ({ isConnected, reconnectAttempt = 0 }) => {
+  const label = isConnected
+    ? 'Connected'
+    : reconnectAttempt === 0
+      ? 'Connecting...'
+      : `Reconnecting (${reconnectAttempt})...`;
 
   return (
     <div
@@ -34,7 +40,7 @@ export const ConnectionStatus: React.FC<ConnectionProps> = ({ isConnected }) => 
         }}
       />
       <span style={{ color: isConnected ? '#4ade80' : '#ef4444' }}>
-        {isConnected ? 'Connected' : 'Reconnecting...'}
+        {label}
       </span>
       <style>{`
         @keyframes pulse {

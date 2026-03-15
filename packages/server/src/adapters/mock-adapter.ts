@@ -56,10 +56,14 @@ export class MockAdapter implements EditorAdapter {
     if (this.running) return;
     this.running = true;
 
-    // Spawn initial agents
+    // Spawn initial agents — fill all 6 desk seats to test full variety
     this.spawnAgent('cubicle-cat-club', 'Agent Uno');
     this.spawnAgent('cubicle-cat-club', 'Agent Dos');
-    this.spawnAgent('my-saas-app', 'Agent Tres');
+    this.spawnAgent('cubicle-cat-club', 'Agent Tres');
+    this.spawnAgent('cubicle-cat-club', 'Agent Cuatro');
+    this.spawnAgent('cubicle-cat-club', 'Agent Cinco');
+    this.spawnAgent('cubicle-cat-club', 'Agent Seis');
+    this.spawnAgent('my-saas-app', 'Agent Siete');
 
     // Start state machine loop
     const interval = setInterval(() => {
@@ -207,7 +211,7 @@ export class MockAdapter implements EditorAdapter {
           break;
 
         case 'tool':
-          // Complete tool execution
+          // Complete tool execution — 20% chance of error to trigger KNOCK
           agent.state = 'active';
           agent.status = AgentStatus.ACTIVE;
           agent.toolIndex++;
@@ -215,6 +219,7 @@ export class MockAdapter implements EditorAdapter {
             type: 'agent:tool:done',
             id: agent.id,
             toolId: `${agent.id}-tool-${agent.toolIndex}`,
+            isError: Math.random() < 0.2,
           } as AgentEvent);
           break;
 

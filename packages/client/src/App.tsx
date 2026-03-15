@@ -2,6 +2,7 @@ import { useRef, useEffect, useState } from 'react';
 import { ServerMessage, ClientMessage, AgentStatus } from '@cubicle-cat-club/shared';
 import { OfficeState } from './engine/office-state';
 import { GameLoop } from './engine/game-loop';
+import { loadAssets } from './engine/asset-loader';
 import { createDefaultLayout } from './office/layout';
 import { RoomTabs } from './ui/room-tabs';
 import { Toolbar } from './ui/toolbar';
@@ -17,10 +18,13 @@ function App() {
   const gameLoopRef = useRef<GameLoop | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
+  const [reconnectAttempt, setReconnectAttempt] = useState(0);
   const [rooms, setRooms] = useState<any[]>([]);
   const [activeRoom, setActiveRoom] = useState<any | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const reconnectDelayRef = useRef(1000);
+  const isFirstConnectRef = useRef(true);
+  const reconnectAttemptRef = useRef(0);
   const dragCharRef = useRef<any>(null);
   const dragOffsetRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const dragMovedRef = useRef(false);
@@ -44,7 +48,7 @@ function App() {
     };
   }, []);
 
-  // Setup game loop
+  // Setup game loop and load assets
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -55,6 +59,16 @@ function App() {
 
     // Make gameLoop available globally for debugging
     (window as any).__gameLoop = gameLoop;
+
+    // Load sprite assets in the background — game renders placeholders until ready
+    loadAssets()
+      .then(assets => {
+        gameLoop.setAssets(assets);
+        console.log('[Assets] Sprite sheets loaded ✓');
+      })
+      .catch(err => {
+        console.warn('[Assets] Failed to load some sprites:', err);
+      });
 
     return () => {
       gameLoop.stop();
@@ -84,9 +98,18 @@ function App() {
         ws.addEventListener('open', () => {
           console.log('WebSocket connected');
           setIsConnected(true);
+          setReconnectAttempt(0);
           reconnectDelayRef.current = 1000; // Reset reconnect delay
 
-          // Send ready message
+          // On reconnect (not first connect), clear stale state before replaying
+          // server snapshot — prevents duplicate cats from agent:created replays
+          if (!isFirstConnectRef.current) {
+            console.log('Reconnected — clearing stale office state');
+            officeStateRef.current.clearAll();
+          }
+          isFirstConnectRef.current = false;
+
+          // Send ready message — server responds with full current state
           const readyMsg: ClientMessage = { type: 'client:ready' };
           ws.send(JSON.stringify(readyMsg));
         });
@@ -105,12 +128,15 @@ function App() {
           setIsConnected(false);
           wsRef.current = null;
 
+          const attempt = (reconnectAttemptRef.current += 1);
+          setReconnectAttempt(attempt);
+
           // Attempt reconnect with exponential backoff
           if (reconnectTimeoutRef.current) {
             clearTimeout(reconnectTimeoutRef.current);
           }
           reconnectTimeoutRef.current = setTimeout(() => {
-            console.log('Attempting to reconnect...');
+            console.log(`Attempting to reconnect (attempt ${attempt})...`);
             connectWebSocket();
           }, reconnectDelayRef.current);
 
@@ -315,7 +341,7 @@ function App() {
 
       <Toolbar activeRoom={activeRoom} />
 
-      <ConnectionStatus isConnected={isConnected} />
+      <ConnectionStatus isConnected={isConnected} reconnectAttempt={reconnectAttempt} />
     </div>
   );
 }

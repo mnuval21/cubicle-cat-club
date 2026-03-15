@@ -408,12 +408,22 @@ export class ClaudeAdapter implements EditorAdapter {
 
     this.roomManager.addAgent(agentInfo);
 
+    // Notify parent that a subagent spawned — triggers zoomies on the parent cat
+    if (tracker.isSubagent && tracker.parentAgentId) {
+      this.emit({
+        type: 'agent:subagent:spawn',
+        id: tracker.agentId,
+        parentId: tracker.parentAgentId,
+      });
+    }
+
     this.emit({
       type: 'agent:created',
       id: tracker.agentId,
       name: tracker.agentName,
       roomId: tracker.roomId,
       adapterId: this.id,
+      paletteIndex: agentInfo.paletteIndex,
     });
 
     console.log(

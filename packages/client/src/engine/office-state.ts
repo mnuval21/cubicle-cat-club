@@ -63,16 +63,30 @@ export class OfficeState {
 
     // Find an unassigned seat
     let assignedSeat: Seat | null = null;
+    let isLoungeSeat = false;
     for (const seat of room.seats) {
       if (seat.assignedAgentId === null) {
         seat.assignedAgentId = agentInfo.id;
         assignedSeat = seat;
+        isLoungeSeat = seat.seatType === 'lounge';
         break;
       }
     }
 
-    // Use fixed palette if provided (e.g. Gerald), otherwise random
-    const paletteIndex = agentInfo.paletteIndex ?? Math.floor(Math.random() * 6);
+    // Palette identity:
+    //   Palette 0 (orange) = Claude — first agent in the room
+    //   Palette 1 (tuxedo) = Gerald — whoever lands on the lounge seat
+    //   Palettes 2-5       = everyone else at desks
+    let paletteIndex: number;
+    if (agentInfo.paletteIndex !== undefined) {
+      paletteIndex = agentInfo.paletteIndex;
+    } else if (isLoungeSeat) {
+      paletteIndex = 1; // Gerald
+    } else if (room.characters.size === 0) {
+      paletteIndex = 0; // Claude
+    } else {
+      paletteIndex = [2, 3, 4, 5][Math.floor(Math.random() * 4)];
+    }
     const character = new Character(
       agentInfo.id,
       agentInfo.name,
@@ -128,6 +142,7 @@ export class OfficeState {
         } else if (status === 'idle') {
           triggerNap(character);
         } else if (status === 'waiting') {
+          character.animVariant = Math.random();
           character.state = CharacterState.IDLE;
         }
         break;
@@ -159,6 +174,7 @@ export class OfficeState {
       const character = room.characters.get(id);
       if (character) {
         character.currentTool = toolName;
+        character.animVariant = Math.random();
         const atSeat =
           character.tileCol === character.seatCol &&
           character.tileRow === character.seatRow;
@@ -181,6 +197,7 @@ export class OfficeState {
       const character = room.characters.get(id);
       if (character) {
         character.currentTool = null;
+        character.animVariant = Math.random();
         character.state = CharacterState.IDLE;
         break;
       }
@@ -228,6 +245,7 @@ export class OfficeState {
       startWandering(character, tileMap);
     } else if (character.state === CharacterState.WALK && !character.currentTool) {
       character.path = [];
+      character.animVariant = Math.random();
       character.state = CharacterState.IDLE;
       character.wanderTimer = Math.random() * 10 + 5;
     } else if (character.state === CharacterState.NAP) {
@@ -286,8 +304,18 @@ export class OfficeState {
     character.x = snapCol * 16;
     character.y = snapRow * 16;
     character.path = [];
+    character.animVariant = Math.random();
     character.state = CharacterState.IDLE;
     character.wanderTimer = Math.random() * 8 + 3;
+  }
+
+  /**
+   * Clear all rooms and characters.
+   * Called before replaying server state on WebSocket reconnect to prevent duplicates.
+   */
+  clearAll(): void {
+    this.rooms.clear();
+    this.activeRoomId = null;
   }
 
   /**

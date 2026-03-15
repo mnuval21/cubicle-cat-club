@@ -55,6 +55,10 @@ export class Character {
   public preZoomiesState: CharacterState = CharacterState.IDLE; // state to restore after zoomies
   public isDragging: boolean = false;
 
+  // Animation variant — random value [0,1) used to pick from multi-row animation sets.
+  // Re-rolled on state transitions to give each cat a unique pose per state.
+  public animVariant: number = Math.random();
+
   constructor(
     id: string,
     name: string,
