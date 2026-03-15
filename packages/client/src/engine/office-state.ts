@@ -63,27 +63,21 @@ export class OfficeState {
 
     // Find an unassigned seat
     let assignedSeat: Seat | null = null;
-    let isLoungeSeat = false;
     for (const seat of room.seats) {
       if (seat.assignedAgentId === null) {
         seat.assignedAgentId = agentInfo.id;
         assignedSeat = seat;
-        isLoungeSeat = seat.seatType === 'lounge';
         break;
       }
     }
 
     // Palette identity:
-    //   Palette 0 (orange) = Claude — first agent in the room
-    //   Palette 1 (tuxedo) = Gerald — whoever lands on the lounge seat
-    //   Palettes 2-5       = everyone else at desks
+    //   Palette 0 (cat4 orange) = Claude ONLY — must be explicitly set by server
+    //   Palette 1 (cat6 tuxedo) = Gerald ONLY — must be explicitly set by server
+    //   Palettes 2-5            = everyone else
     let paletteIndex: number;
-    if (agentInfo.paletteIndex !== undefined) {
+    if (agentInfo.paletteIndex === 0 || agentInfo.paletteIndex === 1) {
       paletteIndex = agentInfo.paletteIndex;
-    } else if (isLoungeSeat) {
-      paletteIndex = 1; // Gerald
-    } else if (room.characters.size === 0) {
-      paletteIndex = 0; // Claude
     } else {
       paletteIndex = [2, 3, 4, 5][Math.floor(Math.random() * 4)];
     }
@@ -222,10 +216,10 @@ export class OfficeState {
   findCharacterAt(worldX: number, worldY: number): Character | null {
     const activeRoom = this.getActiveRoom();
     if (!activeRoom) return null;
-    const hitRadius = 14;
+    const hitRadius = 35;
     for (const character of activeRoom.characters.values()) {
-      const cx = character.x + 8;
-      const cy = character.y + 8;
+      const cx = character.x + 20;
+      const cy = character.y + 20;
       const dx = worldX - cx;
       const dy = worldY - cy;
       if (dx * dx + dy * dy <= hitRadius * hitRadius) {
@@ -279,8 +273,8 @@ export class OfficeState {
     if (!activeRoom) return;
 
     const tileMap = activeRoom.tileMap;
-    const targetCol = Math.round((worldX - 8) / 16);
-    const targetRow = Math.round((worldY - 8) / 16);
+    const targetCol = Math.round((worldX - 20) / 40);
+    const targetRow = Math.round((worldY - 20) / 40);
 
     // Spiral outward from target until we find a walkable tile
     let snapCol = targetCol;
@@ -301,8 +295,8 @@ export class OfficeState {
     character.isDragging = false;
     character.tileCol = snapCol;
     character.tileRow = snapRow;
-    character.x = snapCol * 16;
-    character.y = snapRow * 16;
+    character.x = snapCol * 40;
+    character.y = snapRow * 40;
     character.path = [];
     character.animVariant = Math.random();
     character.state = CharacterState.IDLE;

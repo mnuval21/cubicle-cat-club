@@ -27,7 +27,7 @@ export class Character {
   // Movement
   public path: Array<{ col: number; row: number }> = [];
   public moveProgress: number = 0; // 0-1 between tiles
-  public moveSpeed: number = 48; // pixels per second (3 tiles/sec at 16px)
+  public moveSpeed: number = 120; // pixels per second (3 tiles/sec at 40px)
 
   // Appearance
   public paletteIndex: number;
@@ -79,8 +79,8 @@ export class Character {
     this.tileRow = startRow;
     this.seatCol = seatCol;
     this.seatRow = seatRow;
-    this.x = startCol * 16;
-    this.y = startRow * 16;
+    this.x = startCol * 40;
+    this.y = startRow * 40;
     this.wanderTimer = Math.random() * 10 + 5; // 5-15 seconds
   }
 
@@ -104,7 +104,7 @@ export class Character {
    * Moves character smoothly along the path.
    */
   private updateWalk(dt: number): void {
-    const tilesPerSec = this.moveSpeed / 16;
+    const tilesPerSec = this.moveSpeed / 40;
     const progressPerFrame = tilesPerSec * dt;
     this.moveProgress += progressPerFrame;
 
@@ -115,8 +115,8 @@ export class Character {
         if (nextTile) {
           this.tileCol = nextTile.col;
           this.tileRow = nextTile.row;
-          this.x = this.tileCol * 16;
-          this.y = this.tileRow * 16;
+          this.x = this.tileCol * 40;
+          this.y = this.tileRow * 40;
           this.moveProgress = 0;
 
           // Determine direction based on movement
@@ -142,8 +142,8 @@ export class Character {
     if (this.path.length > 0) {
       const nextTile = this.path[0];
       const interpolation = this.moveProgress;
-      this.x = (this.tileCol + (nextTile.col - this.tileCol) * interpolation) * 16;
-      this.y = (this.tileRow + (nextTile.row - this.tileRow) * interpolation) * 16;
+      this.x = (this.tileCol + (nextTile.col - this.tileCol) * interpolation) * 40;
+      this.y = (this.tileRow + (nextTile.row - this.tileRow) * interpolation) * 40;
     }
   }
 
@@ -181,9 +181,9 @@ export class Character {
   } {
     return {
       minCol: Math.max(1, this.seatCol - this.wanderRange),
-      maxCol: Math.min(20, this.seatCol + this.wanderRange),
+      maxCol: Math.min(15, this.seatCol + this.wanderRange),
       minRow: Math.max(1, this.seatRow - this.wanderRange),
-      maxRow: Math.min(9, this.seatRow + this.wanderRange),
+      maxRow: Math.min(10, this.seatRow + this.wanderRange),
     };
   }
 
@@ -197,6 +197,6 @@ export class Character {
     minRow: number;
     maxRow: number;
   } {
-    return { minCol: 1, maxCol: 20, minRow: 1, maxRow: 9 };
+    return { minCol: 1, maxCol: 15, minRow: 1, maxRow: 10 };
   }
 }

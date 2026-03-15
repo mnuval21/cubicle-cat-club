@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { RoomState } from '../engine/office-state';
 
 interface ToolbarProps {
@@ -8,8 +8,11 @@ interface ToolbarProps {
 /**
  * Agent list toolbar overlay.
  * Shows all agents in the active room with their status and current tool.
+ * Click the header to collapse/expand.
  */
 export const Toolbar: React.FC<ToolbarProps> = ({ activeRoom }) => {
+  const [collapsed, setCollapsed] = useState(false);
+
   if (!activeRoom) {
     return null;
   }
@@ -29,13 +32,14 @@ export const Toolbar: React.FC<ToolbarProps> = ({ activeRoom }) => {
 
   return (
     <div
+      onClick={() => setCollapsed(!collapsed)}
       style={{
         position: 'fixed',
         bottom: 10,
         left: 10,
         right: 10,
-        maxHeight: '150px',
-        overflowY: 'auto',
+        maxHeight: collapsed ? undefined : '150px',
+        overflowY: collapsed ? 'hidden' : 'auto',
         backgroundColor: 'rgba(15, 23, 42, 0.9)',
         border: '1px solid #1e293b',
         borderRadius: '6px',
@@ -44,12 +48,22 @@ export const Toolbar: React.FC<ToolbarProps> = ({ activeRoom }) => {
         fontFamily: 'monospace',
         color: '#e2e8f0',
         zIndex: 999,
+        cursor: 'pointer',
       }}
     >
-      <div style={{ marginBottom: '8px', opacity: 0.7 }}>
-        Agents ({agents.length})
+      <div
+        style={{
+          marginBottom: collapsed ? 0 : '8px',
+          opacity: 0.7,
+          display: 'flex',
+          justifyContent: 'space-between',
+          userSelect: 'none',
+        }}
+      >
+        <span>Agents ({agents.length})</span>
+        <span>{collapsed ? '\u25B2' : '\u25BC'}</span>
       </div>
-      {agents.map((character) => (
+      {!collapsed && agents.map((character) => (
         <div
           key={character.id}
           style={{

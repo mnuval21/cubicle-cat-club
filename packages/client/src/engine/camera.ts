@@ -5,7 +5,7 @@
 export class Camera {
   public x: number = 0;
   public y: number = 0;
-  public zoom: number = 3;
+  public zoom: number = 1.5;
   public targetX: number = 0;
   public targetY: number = 0;
   private lerpSpeed: number = 5;

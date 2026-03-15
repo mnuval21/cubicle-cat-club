@@ -48,17 +48,18 @@ export class TileMap {
 
   /**
    * Create a default office layout.
-   * 22x11 grid: desk zone (cols 1-9) + cat lounge (cols 11-20).
-   * Col 10 is a plant divider (floor, furniture placed there separately).
-   * Windows punched into top wall (row 0) and right wall (col 21).
+   * 17x12 grid (680×480 at 40px tiles) matching Gerald's SVG background.
+   * Desk zone (cols 1-7) + cat lounge (cols 9-15).
+   * Col 8 is the divider area.
+   * Windows punched into top wall (row 0) and right wall (col 16).
    */
   static createDefault(): TileMap {
-    const cols = 22;
-    const rows = 11;
+    const cols = 17;
+    const rows = 12;
     const tiles: TileType[] = [];
 
-    // Window positions on top wall
-    const topWindows = new Set([3, 7, 13, 18]);
+    // Window positions on top wall (matching SVG)
+    const topWindows = new Set([3, 6, 10, 14]);
     // Window positions on right wall
     const rightWindows = new Set([3, 6, 8]);
 
@@ -81,6 +82,32 @@ export class TileMap {
       }
     }
 
-    return new TileMap(cols, rows, tiles);
+    const tileMap = new TileMap(cols, rows, tiles);
+
+    // ── Furniture collision tiles ─────────────────────────────────────────────
+    // Block tiles where SVG furniture is drawn so cats path around them.
+    // Chair/seat tiles are left walkable so cats can reach their seats.
+
+    // Desks (top row: row 3, bottom row: row 7)
+    for (const col of [2, 3, 4, 5, 6, 7]) {
+      tileMap.setTile(col, 3, TileType.WALL);  // top desk row
+      tileMap.setTile(col, 7, TileType.WALL);  // bottom desk row
+    }
+
+    // Sofa (cols 9-12, row 8)
+    for (let col = 9; col <= 12; col++) {
+      tileMap.setTile(col, 8, TileType.WALL);
+    }
+
+    // Cat tree trunk/platforms (cols 15-16, rows 6-9)
+    for (let row = 6; row <= 9; row++) {
+      tileMap.setTile(15, row, TileType.WALL);
+      tileMap.setTile(16, row, TileType.WALL);
+    }
+
+    // Bookshelf (against top wall area)
+    tileMap.setTile(9, 2, TileType.WALL);
+
+    return tileMap;
   }
 }

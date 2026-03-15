@@ -113,18 +113,24 @@ function handleNapState(_character: Character): void {
 function handleZoomiesState(character: Character, dt: number, tileMap: TileMap): void {
   character.zoomiesTimer -= dt;
 
-  // During zoomies, move fast along a chaotic path
+  // During zoomies, sprint in a straight line (horizontal or vertical)
   if (character.path.length === 0 && character.zoomiesTimer > 0) {
-    // Pick a new random nearby tile to sprint to
-    const col = Math.max(1, Math.min(26, character.tileCol + (Math.random() > 0.5 ? 3 : -3)));
-    const row = Math.max(1, Math.min(12, character.tileRow + (Math.random() > 0.5 ? 2 : -2)));
+    let col = character.tileCol;
+    let row = character.tileRow;
+    if (Math.random() > 0.5) {
+      // Horizontal sprint — dash to opposite side
+      col = character.tileCol < 8 ? Math.min(15, character.tileCol + 6) : Math.max(1, character.tileCol - 6);
+    } else {
+      // Vertical sprint — dash up or down
+      row = character.tileRow < 5 ? Math.min(10, character.tileRow + 5) : Math.max(1, character.tileRow - 5);
+    }
     character.setPath(col, row, tileMap);
   }
 
   if (character.zoomiesTimer <= 0 && character.path.length === 0) {
     rerollVariant(character);
     character.state = character.preZoomiesState;
-    character.moveSpeed = 48; // restore normal speed
+    character.moveSpeed = 120; // restore normal speed
     if (character.state === CharacterState.IDLE) {
       character.wanderTimer = Math.random() * 3 + 1;
     }
@@ -148,7 +154,7 @@ function handleKnockState(character: Character, dt: number): void {
 export function triggerZoomies(character: Character): void {
   character.preZoomiesState = character.state;
   character.zoomiesTimer = ZOOMIES_DURATION;
-  character.moveSpeed = 120; // 2.5× normal speed
+  character.moveSpeed = 300; // 2.5× normal speed
   character.state = CharacterState.ZOOMIES;
 }
 
