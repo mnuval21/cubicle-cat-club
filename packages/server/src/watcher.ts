@@ -140,8 +140,9 @@ export function watchForNewSessions(
   const watcher = watch(basePath, {
     persistent: true,
     ignoreInitial: true,
-    // Ignore hidden dirs, node_modules, etc
-    ignored: /(^|[\/\\])\.|node_modules|venv/,
+    // Only ignore node_modules and venv — NOT dot-dirs, since basePath
+    // is inside ~/.claude/ and chokidar tests the full absolute path.
+    ignored: /node_modules|venv/,
   });
 
   watcher.on('add', async (filePath: string) => {

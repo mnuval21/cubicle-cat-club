@@ -68,6 +68,16 @@ const WALK = {
   LEFT: { row: 7, frames: 8 } as AnimInfo,
 };
 
+const ZOOMIES_DOWN: AnimInfo[] = [
+  { row: 8, frames: 4 },
+  { row: 9, frames: 4 },
+];
+
+const ZOOMIES_UP: AnimInfo[] = [
+  { row: 10, frames: 4 },
+  { row: 11, frames: 4 },
+];
+
 const DANGLE: AnimInfo = { row: 43, frames: 1 };
 
 function pickVariant(rows: AnimInfo[], variant: number): AnimInfo {
@@ -88,8 +98,12 @@ function getAnim(state: CharacterState, direction: Direction, animVariant: numbe
       return pickVariant(KNOCK_ROWS, animVariant);
     case CharacterState.DANGLE:
       return DANGLE;
-    case CharacterState.WALK:
     case CharacterState.ZOOMIES:
+      if (direction === Direction.DOWN) return pickVariant(ZOOMIES_DOWN, animVariant);
+      if (direction === Direction.UP) return pickVariant(ZOOMIES_UP, animVariant);
+      if (direction === Direction.LEFT) return WALK.LEFT;
+      return WALK.RIGHT;
+    case CharacterState.WALK:
       if (direction === Direction.DOWN) return WALK.DOWN;
       if (direction === Direction.UP) return WALK.UP;
       if (direction === Direction.LEFT) return WALK.LEFT;
