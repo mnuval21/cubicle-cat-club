@@ -2,19 +2,13 @@ import React from 'react';
 
 interface ConnectionProps {
   isConnected: boolean;
-  reconnectAttempt?: number;
 }
 
 /**
  * Connection status indicator overlay.
- * Shows WebSocket connection state with reconnect attempt count.
  */
-export const ConnectionStatus: React.FC<ConnectionProps> = ({ isConnected, reconnectAttempt = 0 }) => {
-  const label = isConnected
-    ? 'Connected'
-    : reconnectAttempt === 0
-      ? 'Connecting...'
-      : `Reconnecting (${reconnectAttempt})...`;
+export const ConnectionStatus: React.FC<ConnectionProps> = ({ isConnected }) => {
+  const label = isConnected ? 'Connected' : 'Reconnecting...';
 
   return (
     <div

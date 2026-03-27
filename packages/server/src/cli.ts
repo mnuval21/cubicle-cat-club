@@ -54,15 +54,11 @@ async function main(): Promise<void> {
     .option('--mock', 'Use mock adapter (simulated agents)', false)
     .option('--live', 'Use real Claude Code adapter (watches ~/.claude/projects/)', false)
     .option('--claude-path <path>', 'Custom path to Claude Code projects directory', undefined)
-    .option('--replay <path>', 'Replay a saved session file', undefined)
-    .option('--speed <multiplier>', 'Replay speed multiplier (default: 1)', '1')
     .option('--no-open', 'Do not auto-open browser', false)
     .parse();
 
   const opts = program.opts();
   const port = parseInt(opts.port, 10);
-  const replayPath = opts.replay;
-  const replaySpeed = parseFloat(opts.speed);
   const shouldOpen = opts.open !== false;
   const claudePath = opts.claudePath || process.env.CLAUDE_PROJECTS;
 
@@ -75,10 +71,6 @@ async function main(): Promise<void> {
   if (useMock) {
     adapter = new MockAdapter();
     console.log('[Adapter] Using MockAdapter for demo mode\n');
-  } else if (replayPath) {
-    // TODO: Implement ReplayAdapter
-    console.log(`[Adapter] ReplayAdapter (path: ${replayPath}, speed: ${replaySpeed}x)\n`);
-    adapter = new MockAdapter(); // Fallback to mock for now
   } else if (useLive || !useMock) {
     adapter = new ClaudeAdapter(claudePath);
     console.log('[Adapter] Using ClaudeAdapter (real Claude Code sessions)\n');

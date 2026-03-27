@@ -64,11 +64,10 @@ export class RoomManager {
       this.agents.delete(agentId);
     }
 
-    // Remove room if no longer needed
+    // Remove empty rooms immediately
     const room = this.rooms.get(roomId);
     if (room && room.agentIds.length === 0) {
-      // Keep room for a bit in case agents re-join
-      // (Or remove immediately based on your UX preference)
+      this.rooms.delete(roomId);
     }
   }
 

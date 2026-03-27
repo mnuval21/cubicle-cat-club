@@ -18,7 +18,6 @@ function App() {
   const gameLoopRef = useRef<GameLoop | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
-  const [reconnectAttempt, setReconnectAttempt] = useState(0);
   const [rooms, setRooms] = useState<any[]>([]);
   const [activeRoom, setActiveRoom] = useState<any | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -98,7 +97,7 @@ function App() {
         ws.addEventListener('open', () => {
           console.log('WebSocket connected');
           setIsConnected(true);
-          setReconnectAttempt(0);
+          reconnectAttemptRef.current = 0;
           reconnectDelayRef.current = 1000; // Reset reconnect delay
 
           // On reconnect (not first connect), clear stale state before replaying
@@ -128,15 +127,14 @@ function App() {
           setIsConnected(false);
           wsRef.current = null;
 
-          const attempt = (reconnectAttemptRef.current += 1);
-          setReconnectAttempt(attempt);
+          reconnectAttemptRef.current += 1;
 
           // Attempt reconnect with exponential backoff
           if (reconnectTimeoutRef.current) {
             clearTimeout(reconnectTimeoutRef.current);
           }
           reconnectTimeoutRef.current = setTimeout(() => {
-            console.log(`Attempting to reconnect (attempt ${attempt})...`);
+            console.log(`Attempting to reconnect (attempt ${reconnectAttemptRef.current})...`);
             connectWebSocket();
           }, reconnectDelayRef.current);
 
@@ -341,7 +339,7 @@ function App() {
 
       <Toolbar activeRoom={activeRoom} />
 
-      <ConnectionStatus isConnected={isConnected} reconnectAttempt={reconnectAttempt} />
+      <ConnectionStatus isConnected={isConnected} />
     </div>
   );
 }

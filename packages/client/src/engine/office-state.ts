@@ -105,42 +105,46 @@ export class OfficeState {
    * Remove an agent from the office.
    */
   removeAgent(id: string): void {
-    for (const room of this.rooms.values()) {
-      const character = room.characters.get(id);
-      if (character) {
-        // Free up the seat
-        for (const seat of room.seats) {
-          if (seat.assignedAgentId === id) {
-            seat.assignedAgentId = null;
-          }
-        }
-        room.characters.delete(id);
-        break;
+    const found = this.findCharacterById(id);
+    if (!found) return;
+
+    for (const seat of found.room.seats) {
+      if (seat.assignedAgentId === id) {
+        seat.assignedAgentId = null;
       }
     }
+    found.room.characters.delete(id);
+  }
+
+  /**
+   * Find a character by ID across all rooms.
+   */
+  private findCharacterById(id: string): { character: Character; room: RoomState } | null {
+    for (const room of this.rooms.values()) {
+      const character = room.characters.get(id);
+      if (character) return { character, room };
+    }
+    return null;
   }
 
   /**
    * Update an agent's status.
-   * Maps AgentStatus to CharacterState for animation.
    */
   updateAgentStatus(id: string, status: string): void {
-    for (const room of this.rooms.values()) {
-      const character = room.characters.get(id);
-      if (character) {
-        if (status === 'active') {
-          wakeUp(character); // no-op if not napping; wakes if napping
-          if (character.state !== CharacterState.NAP) {
-            character.state = CharacterState.WALK;
-          }
-        } else if (status === 'idle') {
-          triggerNap(character);
-        } else if (status === 'waiting') {
-          character.animVariant = Math.random();
-          character.state = CharacterState.IDLE;
-        }
-        break;
+    const found = this.findCharacterById(id);
+    if (!found) return;
+    const { character } = found;
+
+    if (status === 'active') {
+      wakeUp(character);
+      if (character.state !== CharacterState.NAP) {
+        character.state = CharacterState.WALK;
       }
+    } else if (status === 'idle') {
+      triggerNap(character);
+    } else if (status === 'waiting') {
+      character.animVariant = Math.random();
+      character.state = CharacterState.IDLE;
     }
   }
 
@@ -148,14 +152,11 @@ export class OfficeState {
    * Trigger a behavior event on a character (error → KNOCK, subagent spawn → ZOOMIES).
    */
   triggerBehavior(id: string, behavior: 'knock' | 'zoomies'): void {
-    for (const room of this.rooms.values()) {
-      const character = room.characters.get(id);
-      if (character) {
-        if (behavior === 'knock') triggerKnock(character);
-        if (behavior === 'zoomies') triggerZoomies(character);
-        break;
-      }
-    }
+    const found = this.findCharacterById(id);
+    if (!found) return;
+
+    if (behavior === 'knock') triggerKnock(found.character);
+    if (behavior === 'zoomies') triggerZoomies(found.character);
   }
 
   /**
@@ -164,22 +165,20 @@ export class OfficeState {
    * If not, walk there first — TYPE starts on arrival (see state-machine.ts).
    */
   setToolActive(id: string, toolName: string): void {
-    for (const room of this.rooms.values()) {
-      const character = room.characters.get(id);
-      if (character) {
-        character.currentTool = toolName;
-        character.animVariant = Math.random();
-        const atSeat =
-          character.tileCol === character.seatCol &&
-          character.tileRow === character.seatRow;
-        if (atSeat) {
-          character.state = CharacterState.TYPE;
-        } else {
-          character.setPath(character.seatCol, character.seatRow, room.tileMap);
-          character.state = CharacterState.WALK;
-        }
-        break;
-      }
+    const found = this.findCharacterById(id);
+    if (!found) return;
+    const { character, room } = found;
+
+    character.currentTool = toolName;
+    character.animVariant = Math.random();
+    const atSeat =
+      character.tileCol === character.seatCol &&
+      character.tileRow === character.seatRow;
+    if (atSeat) {
+      character.state = CharacterState.TYPE;
+    } else {
+      character.setPath(character.seatCol, character.seatRow, room.tileMap);
+      character.state = CharacterState.WALK;
     }
   }
 
@@ -187,15 +186,12 @@ export class OfficeState {
    * Clear the tool/speech bubble for an agent.
    */
   clearTool(id: string): void {
-    for (const room of this.rooms.values()) {
-      const character = room.characters.get(id);
-      if (character) {
-        character.currentTool = null;
-        character.animVariant = Math.random();
-        character.state = CharacterState.IDLE;
-        break;
-      }
-    }
+    const found = this.findCharacterById(id);
+    if (!found) return;
+
+    found.character.currentTool = null;
+    found.character.animVariant = Math.random();
+    found.character.state = CharacterState.IDLE;
   }
 
   /**

@@ -118,8 +118,7 @@ cubicle-cat-club/
 │       ├── characters/  # Cat entities, state machine, pathfinding
 │       ├── office/      # Tile map, furniture, layout
 │       └── ui/          # React overlays (tabs, toolbar, connection)
-├── assets/              # SVG office background art
-└── PROJECT-PLAN.md      # Vision, research, and roadmap
+└── install.sh           # One-line installer
 ```
 
 ## Architecture
