@@ -17,7 +17,8 @@
     "typecheck": "tsc --build"
   },
   "bin": {
-    "cubicle-cat-club": "./packages/server/dist/cli.js"
+    "cubicle-cat-club": "./packages/server/dist/cli.js",
+    "cubicle-cats": "./packages/server/dist/cli.js"
   },
   "keywords": ["claude", "claude-code", "pixel-art", "agents", "visualization", "office"],
   "license": "MIT",
