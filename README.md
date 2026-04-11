@@ -1,5 +1,8 @@
 # Cubicle Cat Club
 
+<img width="1086" height="530" alt="Screenshot 2026-04-10 at 8 40 59 PM" src="https://github.com/user-attachments/assets/53d5e3eb-ddbe-48d8-b192-da394f7b3817" />
+
+
 > Your AI agents as cats in an office
 
 Cubicle Cat Club turns your AI coding agents into animated pixel cats working in a virtual office. Watch them walk to their desks, type away, take naps, and sprint around in zoomies — all in real time as they execute tools and spawn subagents.
